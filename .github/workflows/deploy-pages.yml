@@ -27,8 +27,11 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Upgrade npm (fix optionalDependencies bug)
+        run: npm i -g npm@11.3.0
+
       - name: Install
-        run: npm ci
+        run: npm ci --include=optional
 
       - name: Build
         run: npm run build
