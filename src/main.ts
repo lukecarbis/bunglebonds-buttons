@@ -133,21 +133,14 @@ async function setActivePartyMember(id: string | null) {
 }
 
 async function setItemInPartyFlag(itemId: string, inParty: boolean) {
-  const items = await OBR.scene.items.getItems();
-  const target = items.find((i) => i.id === itemId);
-  if (!target) return;
-
-  await OBR.scene.items.updateItems(
-    [target] as any,
-    (toUpdate) => {
-      for (const it of toUpdate) {
-        const md = (it.metadata ?? {}) as Record<string, unknown>;
-        if (inParty) md[IN_PARTY_KEY] = true;
-        else delete md[IN_PARTY_KEY];
-        it.metadata = md as any;
-      }
-    },
-  );
+  await OBR.scene.items.updateItems([itemId], (items) => {
+    for (const it of items) {
+      const md = (it.metadata ?? {}) as Record<string, unknown>;
+      if (inParty) md[IN_PARTY_KEY] = true;
+      else delete md[IN_PARTY_KEY];
+      it.metadata = md as any;
+    }
+  });
 }
 
 async function clearActiveIfMissing(state: PartyState) {
@@ -279,7 +272,7 @@ function start() {
             every: [
               { key: "layer", value: "CHARACTER" },
               { key: "type", value: "IMAGE" },
-              { key: `metadata.${IN_PARTY_KEY}`, operator: "!=" as any, value: true },
+              { key: IN_PARTY_KEY, operator: "!=" as any, value: true },
             ],
             permissions: ["UPDATE"],
           },
@@ -291,9 +284,6 @@ function start() {
     
         await addToParty({ id: item.id, name: item.name ?? "" });
         await OBR.notification.show(`Added "${item.name || "Unnamed"}" to Party.`, "SUCCESS");
-        const all = await OBR.scene.items.getItems();
-        const updated = all.find((i) => i.id === item.id);
-        console.log("Item metadata:", updated?.metadata);
       },
     });
     
@@ -309,7 +299,7 @@ function start() {
             every: [
               { key: "layer", value: "CHARACTER" },
               { key: "type", value: "IMAGE" },
-              { key: `metadata.${IN_PARTY_KEY}`, value: true },
+              { key: IN_PARTY_KEY, value: true },
             ],
             permissions: ["UPDATE"],
           },
