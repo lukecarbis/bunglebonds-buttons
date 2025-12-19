@@ -22,9 +22,11 @@ function start() {
 
     await OBR.tool.create({
       id: `${NS}.tool`,
-      icon: "/icon.svg",
       name: "Bunglebond's Buttons",
       shortcut: "Shift+B",
+      icons: {
+        24: "icon.svg",
+      },
     });
 
     const role = await OBR.player.getRole();
