@@ -32,3 +32,44 @@ h1 {
   font-weight: 700;
   line-height: 32px;
 }
+
+/* Root */
+.bb-root {
+  margin: 0;
+  background: var(--obr-bg);
+  color: var(--obr-text);
+}
+
+/* Panel */
+.bb-panel {
+  padding: 12px;
+}
+
+/* Title */
+.bb-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+/* Subtitle */
+.bb-subtitle {
+  font-size: 12px;
+  color: var(--obr-text-muted);
+  margin-bottom: 10px;
+}
+
+/* Item list */
+.bb-list {
+  margin: 0;
+  padding: 10px;
+  max-height: 60vh;
+  overflow: auto;
+
+  background: var(--obr-surface);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
