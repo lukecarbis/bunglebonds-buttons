@@ -43,7 +43,7 @@ function mountUi() {
   root.appendChild(list);
   document.body.appendChild(root);
   
-  return { list };
+  return { list, help };
 }
  
 async function getPartyMembers(): Promise<PartyMember[]> {
@@ -100,25 +100,6 @@ function renderPartyMembers(
     li.textContent = m.name || "(Unnamed)";
     els.list.appendChild(li);
   }
-}
-
-function formatItemsForList(items: any[]) {
-  // Keep it compact: show id, name, type, layer.
-  return JSON.stringify(
-    items.map((i) => ({
-      id: i.id,
-      name: i.name ?? "",
-      type: i.type,
-      layer: i.layer,
-    })),
-    null,
-    2,
-  );
-}
-
-async function refreshItemList(target: HTMLPreElement) {
-  const items = await OBR.scene.items.getItems();
-  target.textContent = formatItemsForList(items);
 }
 
 function start() {
