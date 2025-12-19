@@ -1,4 +1,5 @@
 import OBR from "@owlbear-rodeo/sdk";
+import "./style.css";
 
 const NS = "com.example.bunglebonds-buttons";
 const PARTY_KEY = `${NS}/partyMembers`;
@@ -31,20 +32,14 @@ function mountUi() {
   const root = document.createElement("div");
   root.className = "bb-panel";
   
-  const title = document.createElement("div");
-  title.className = "bb-title";
-  title.textContent = "Bunglebond's Buttons";
+  const help = document.createElement("div");
+  help.className = "bb-help";
+  help.textContent = "Right-click a character token and choose “Add to Party” to populate this list.";
   
-  const subtitle = document.createElement("div");
-  subtitle.className = "bb-subtitle";
-  subtitle.textContent = "Scene items";
+  const list = document.createElement("ul");
+  list.className = "bb-party-list";
   
-  const list = document.createElement("pre");
-  list.className = "bb-list";
-  list.textContent = "Loading…";
-  
-  root.appendChild(title);
-  root.appendChild(subtitle);
+  root.appendChild(help);
   root.appendChild(list);
   document.body.appendChild(root);
   
@@ -86,6 +81,27 @@ async function addPartyMember(member: PartyMember) {
   );
 }
 
+function renderPartyMembers(
+  members: PartyMember[],
+  els: { list: HTMLUListElement; help: HTMLDivElement },
+) {
+  els.list.innerHTML = "";
+
+  if (!members.length) {
+    els.help.style.display = "block";
+    return;
+  }
+
+  els.help.style.display = "none";
+
+  for (const m of members) {
+    const li = document.createElement("li");
+    li.className = "bb-party-item";
+    li.textContent = m.name || "(Unnamed)";
+    els.list.appendChild(li);
+  }
+}
+
 function formatItemsForList(items: any[]) {
   // Keep it compact: show id, name, type, layer.
   return JSON.stringify(
@@ -121,12 +137,21 @@ function start() {
     // In-tool UI: show all tokens/items
     const ui = mountUi();
 
-    // Initial fill + live updates
-    await refreshItemList(ui.list);
-
-    OBR.scene.items.onChange(async (items) => {
-      // onChange gives the full current list; display it directly.
-      ui.list.textContent = formatItemsForList(items);
+    // Initial render + live updates (from scene metadata)
+    renderPartyMembers(await getPartyMembers(), ui);
+    
+    OBR.scene.onMetadataChange((metadata) => {
+      const value = metadata[PARTY_KEY];
+      const members = Array.isArray(value)
+        ? value
+            .filter((x) => x && typeof x.id === "string")
+            .map((x) => ({
+              id: String(x.id),
+              name: typeof x.name === "string" ? x.name : "",
+            }))
+        : [];
+    
+      renderPartyMembers(members, ui);
     });
 
     // Right-click context menu: Character token → Add to Party Members (stored in scene metadata)

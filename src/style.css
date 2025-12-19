@@ -9,28 +9,12 @@ body {
   color: var(--obr-text);
 }
 
-#app {
-  background: var(--obr-surface);
-  border: 1px solid color-mix(in srgb, var(--obr-text) 15%, transparent);
-  border-radius: 10px;
-  padding: 12px;
-}
-
 button {
   background: var(--obr-primary);
   color: var(--obr-primary-contrast);
   border: 0;
   border-radius: 8px;
   padding: 8px 10px;
-}
-
-h1 {
-  margin: 0px;
-  letter-spacing: 0em;
-  display: block;
-  font-size: 1.125rem;
-  font-weight: 700;
-  line-height: 32px;
 }
 
 /* Root */
@@ -47,8 +31,12 @@ h1 {
 
 /* Title */
 .bb-title {
-  font-weight: 600;
-  margin-bottom: 8px;
+  margin: 0px;
+  letter-spacing: 0em;
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 32px;
 }
 
 /* Subtitle */
@@ -58,18 +46,28 @@ h1 {
   margin-bottom: 10px;
 }
 
-/* Item list */
-.bb-list {
-  margin: 0;
-  padding: 10px;
-  max-height: 60vh;
-  overflow: auto;
+.bb-help {
+  font-size: 12px;
+  color: var(--obr-text-muted);
+  margin: 8px 0 10px;
+  line-height: 1.4;
+}
 
+.bb-party-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   background: var(--obr-surface);
   border-radius: 8px;
   border: 1px solid rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
 
-  font-size: 12px;
-  line-height: 1.4;
-  white-space: pre-wrap;
+.bb-party-item {
+  padding: 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.bb-party-item:first-child {
+  border-top: none;
 }
