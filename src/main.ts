@@ -229,6 +229,8 @@ function renderPartyMembers(
 }
 
 function start() {
+  // DEBUG ONLY
+  ;(window as any).OBR = OBR;
   OBR.onReady(async () => {
     // Theme → CSS vars (unchanged)
     applyThemeToCssVars(await OBR.theme.getTheme());
@@ -264,7 +266,7 @@ function start() {
       id: `${NS}.party.add`,
       icons: [
         {
-          icon: "/icon.svg",
+          icon: "icon.svg",
           label: "Add to Party",
           filter: {
             min: 1,
@@ -291,7 +293,7 @@ function start() {
       id: `${NS}.party.remove`,
       icons: [
         {
-          icon: "/icon.svg",
+          icon: "icon.svg",
           label: "Remove from Party",
           filter: {
             min: 1,
