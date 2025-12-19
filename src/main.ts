@@ -22,17 +22,18 @@ function start() {
 
     await OBR.tool.create({
       id: `${NS}.tool`,
-      name: "Bunglebond's Buttons",
       shortcut: "Shift+B",
-      icons: {
-        24: "icon.svg",
-      },
+      icons: [
+        { icon: "icon.svg", label: "Bunglebond's Buttons" },
+      ],
     });
 
     const role = await OBR.player.getRole();
     status.textContent = `Ready (role: ${role})`;
 
-    OBR.player.onSelectionChange((ids) => log({ selection: ids }));
+    OBR.player.onChange((player) => {
+      log({ selection: player.selection ?? [] });
+    });
 
     if (!wired) {
       wired = true;
