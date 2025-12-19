@@ -56,10 +56,43 @@ button {
 }
 
 .bb-party-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
   padding: 10px;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .bb-party-item:first-child {
   border-top: none;
+}
+
+.bb-party-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bb-party-actions {
+  display: inline-flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.bb-party-btn {
+  appearance: none;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  background: var(--obr-surface);
+  color: var(--obr-text);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.bb-party-btn:active {
+  transform: translateY(1px);
 }
