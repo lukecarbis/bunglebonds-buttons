@@ -238,7 +238,7 @@ function start() {
     await OBR.tool.create({
       id: `${NS}.tool`,
       shortcut: "Shift+B",
-      icons: [{ icon: "icon.svg", label: "Bunglebond's Buttons" }],
+      icons: [{ icon: "/bunglebonds-buttons/icon.svg", label: "Bunglebond's Buttons" }],
     });
 
     // In-tool UI: show all tokens/items
@@ -264,7 +264,7 @@ function start() {
       id: `${NS}.party.add`,
       icons: [
         {
-          icon: "/icon.svg",
+          icon: "/bunglebonds-buttons/icon.svg",
           label: "Add to Party",
           filter: {
             min: 1,
@@ -272,7 +272,7 @@ function start() {
             every: [
               { key: "layer", value: "CHARACTER" },
               { key: "type", value: "IMAGE" },
-              { key: `metadata.${IN_PARTY_KEY}`, operator: "!=" as any, value: true },
+              // { key: `metadata.${IN_PARTY_KEY}`, operator: "!=" as any, value: true },
             ],
             permissions: ["UPDATE"],
           },
@@ -284,6 +284,8 @@ function start() {
     
         await addToParty({ id: item.id, name: item.name ?? "" });
         await OBR.notification.show(`Added "${item.name || "Unnamed"}" to Party.`, "SUCCESS");
+        const metadata = await OBR.scene.getMetadata();
+        console.log(metadata);
       },
     });
     
@@ -291,7 +293,7 @@ function start() {
       id: `${NS}.party.remove`,
       icons: [
         {
-          icon: "/icon.svg",
+          icon: "/bunglebonds-buttons/icon.svg",
           label: "Remove from Party",
           filter: {
             min: 1,
@@ -299,7 +301,7 @@ function start() {
             every: [
               { key: "layer", value: "CHARACTER" },
               { key: "type", value: "IMAGE" },
-              { key: `metadata.${IN_PARTY_KEY}`, value: true },
+              // { key: `metadata.${IN_PARTY_KEY}`, value: true },
             ],
             permissions: ["UPDATE"],
           },
