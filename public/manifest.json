@@ -4,8 +4,8 @@
   "manifest_version": 1,
   "action": {
 	"title": "Bunglebond's Buttons",
-	"icon": "/icon.svg",
-	"popover": "/",
+	"icon": "/bunglebonds-buttons/icon.svg",
+	"popover": "/bunglebonds-buttons/",
 	"height": 600,
 	"width": 400
   }
