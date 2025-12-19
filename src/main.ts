@@ -27,10 +27,7 @@ function applyThemeToCssVars(theme: Awaited<ReturnType<typeof OBR.theme.getTheme
  * (No reliance on previous test DOM nodes: status/out/ping.)
  */
 function mountUi() {
-  document.body.classList.add("bb-root");
-  
-  const root = document.createElement("div");
-  root.className = "bb-panel";
+  document.body.classList.add("bb-panel");
   
   const help = document.createElement("div");
   help.className = "bb-help";
@@ -39,9 +36,8 @@ function mountUi() {
   const list = document.createElement("ul");
   list.className = "bb-party-list";
   
-  root.appendChild(help);
-  root.appendChild(list);
-  document.body.appendChild(root);
+  document.body.appendChild(help);
+  document.body.appendChild(list);
   
   return { list, help };
 }

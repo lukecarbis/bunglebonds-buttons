@@ -17,14 +17,6 @@ button {
   padding: 8px 10px;
 }
 
-/* Root */
-.bb-root {
-  margin: 0;
-  background: var(--obr-bg);
-  color: var(--obr-text);
-}
-
-/* Panel */
 .bb-panel {
   padding: 12px;
 }
