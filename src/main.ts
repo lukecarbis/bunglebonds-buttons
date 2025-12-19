@@ -2,8 +2,8 @@ import OBR from "@owlbear-rodeo/sdk";
 import "./style.css";
 
 const NS = "com.example.bunglebonds-buttons";
-const PARTY_KEY = `${NS}/partyMembers`;
-const IN_PARTY_KEY = `${NS}/inParty`;
+const PARTY_KEY = `${NS}.partyMembers`;
+const IN_PARTY_KEY = `${NS}.inParty`;
 
 type PartyMember = { id: string; name: string };
 type PartyState = {
@@ -229,8 +229,6 @@ function renderPartyMembers(
 }
 
 function start() {
-  // DEBUG ONLY
-  ;(window as any).OBR = OBR;
   OBR.onReady(async () => {
     // Theme → CSS vars (unchanged)
     applyThemeToCssVars(await OBR.theme.getTheme());
@@ -266,7 +264,7 @@ function start() {
       id: `${NS}.party.add`,
       icons: [
         {
-          icon: "icon.svg",
+          icon: "/icon.svg",
           label: "Add to Party",
           filter: {
             min: 1,
@@ -293,7 +291,7 @@ function start() {
       id: `${NS}.party.remove`,
       icons: [
         {
-          icon: "icon.svg",
+          icon: "/icon.svg",
           label: "Remove from Party",
           filter: {
             min: 1,
