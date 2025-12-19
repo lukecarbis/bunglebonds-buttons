@@ -12,6 +12,22 @@ function log(obj: unknown) {
 
 let wired = false;
 
+function applyThemeToCssVars(theme: Awaited<ReturnType<typeof OBR.theme.getTheme>>) {
+  const r = document.documentElement.style;
+
+  r.setProperty("--obr-mode", theme.mode);
+  r.setProperty("--obr-primary", theme.primary.main);
+  r.setProperty("--obr-primary-contrast", theme.primary.contrastText);
+  r.setProperty("--obr-secondary", theme.secondary.main);
+
+  r.setProperty("--obr-bg", theme.background.default);
+  r.setProperty("--obr-surface", theme.background.paper);
+
+  r.setProperty("--obr-text", theme.text.primary);
+  r.setProperty("--obr-text-muted", theme.text.secondary);
+  r.setProperty("--obr-text-disabled", theme.text.disabled);
+}
+
 function start() {
   const timeout = window.setTimeout(() => {
     status.textContent = "Loaded, but not inside Owlbear Rodeo.";
@@ -19,6 +35,9 @@ function start() {
 
   OBR.onReady(async () => {
     window.clearTimeout(timeout);
+
+    applyThemeToCssVars(await OBR.theme.getTheme());
+    OBR.theme.onChange(applyThemeToCssVars);
 
     await OBR.tool.create({
       id: `${NS}.tool`,
