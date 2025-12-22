@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Keyboard Tool for changing key bindings
+keyboard\ tool
