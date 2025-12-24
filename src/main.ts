@@ -1,4 +1,4 @@
-import OBR, { buildShape, Image, Shape } from "@owlbear-rodeo/sdk";
+import OBR, { buildShape, type Image, type Shape } from "@owlbear-rodeo/sdk";
 import "./style.css";
 
 const NS = "com.example.bunglebonds-buttons";
