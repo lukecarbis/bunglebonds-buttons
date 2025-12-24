@@ -441,15 +441,18 @@ OBR.onReady(async () => {
 
     await OBR.tool.create({
       id: TOOL_ID,
-      icons: [{ icon: "/icon.svg", label: "Party Hotkeys" }],
+      icons: [{ icon: "/bunglebonds-buttons/icon.svg", label: "Party Hotkeys" }],
       shortcut: "B",
       defaultMode: `${NS}.partyToolPrevActive`
     });
 
     await OBR.tool.createMode({
-      id: `${NS}.partyToolPrevActive`,
-      icons: [{ icon: "/icon.svg", label: "Prev Active" }],
-      shortcut: "P",
+      id: `${NS}.partyToolActive`,
+      icons: [{ icon: "/bunglebonds-buttons/icon.svg", label: "Active" }],
+      filter: {
+        activeTools: [TOOL_ID],
+      },
+      shortcut: "A",
       onKeyDown(_ctx, e) {
         if (!e.shiftKey || e.repeat) return;
         if (e.key === "ArrowLeft") void shiftActivePartyMember(-1);
