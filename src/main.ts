@@ -469,7 +469,7 @@ OBR.onReady(async () => {
       id: TOOL_ID,
       icons: [{ icon: "/bunglebonds-buttons/icon.svg", label: "Party Hotkeys" }],
       shortcut: "B",
-      defaultMode: `${NS}.partyToolPrevActive`
+      defaultMode: `${NS}.partyToolKeypad`
     });
 
     await OBR.tool.createMode({
@@ -485,12 +485,12 @@ OBR.onReady(async () => {
       ],
       shortcut: "K",
       onKeyDown(_ctx, e) {
-        if (!e.shiftKey || e.repeat) return;
+        if (!e.altKey || e.repeat) return;
 
         if (e.key === "ArrowLeft") void shiftActivePartyMember(-1);
         if (e.key === "ArrowRight") void shiftActivePartyMember(1);
 
-        if (e.code === "Numpad5") void moveActiveTokenByGridSteps({ dx: 0, dy: -1 }); // north
+        if (e.code === "Numpad7") void moveActiveTokenByGridSteps({ dx: 0, dy: -1 }); // north
       },
     });
   };
