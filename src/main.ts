@@ -170,8 +170,8 @@ async function upsertActiveRing(activeId: string | null) {
 
   if (!activeId) return;
 
-  const [token] = await OBR.scene.items.getItems<Image>([activeId]);
-  if (!token || token.type !== "IMAGE" || !token.grid) return;
+  const token = await getTokenEventually(activeId);
+  if (!token || !token.grid) return;
 
   const sceneDpi = await OBR.scene.grid.getDpi();
 
@@ -253,6 +253,15 @@ function startActiveRingPulse() {
       },
     );
   }, 200);
+}
+
+async function getTokenEventually(id: string, tries = 6, delayMs = 200) {
+  for (let i = 0; i < tries; i++) {
+    const [token] = await OBR.scene.items.getItems<Image>([id]);
+    if (token && token.type === "IMAGE") return token;
+    await new Promise((r) => setTimeout(r, delayMs));
+  }
+  return null;
 }
 
 async function cleanupPartyForDeletedItems() {
@@ -409,6 +418,7 @@ OBR.onReady(async () => {
 
   const unwireScene = () => {
     sceneWired = false;
+    void removeActiveRing();
 
     ui.list.innerHTML = "";
     ui.help.style.display = "block";
