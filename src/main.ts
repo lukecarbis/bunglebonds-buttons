@@ -181,7 +181,7 @@ async function upsertActiveRing(activeId: string | null) {
   const height = token.image.height * dpiScale;
 
   // Use a circular ring sized to the smaller dimension
-  const diameter = Math.min(width, height) + 16;
+  const diameter = Math.min(width, height) + 12;
 
   // Account for grid offset (very important for tokens whose grid origin
   // is not the top-left of the image)
@@ -224,11 +224,10 @@ function startActiveRingPulse() {
   const max_opacity = 0.8;
   const min_stroke = 4;
   const max_stroke = 8;
-  const period = 2000;
+  const period = 3000;
 
   activeRingPulseTimer = window.setInterval(async () => {
     const rings = await OBR.scene.local.getItems<Shape>(isActiveRing);
-    console.log(rings.length);
     if (!rings.length) return;
 
     const t = (performance.now() - start) / period;
@@ -253,7 +252,7 @@ function startActiveRingPulse() {
         }
       },
     );
-  }, 100); // ~10 FPS, smooth enough and cheap
+  }, 200);
 }
 
 async function cleanupPartyForDeletedItems() {
@@ -345,7 +344,9 @@ OBR.onReady(async () => {
     sceneWired = true;
 
     // Initial render + live updates
-    renderPartyMembers(await getPartyState(), ui);
+    const initialState = await getPartyState();
+    renderPartyMembers(initialState, ui);
+    void upsertActiveRing(initialState.activeId);
 
     OBR.scene.onMetadataChange((metadata) => {
       const state = normalisePartyState(metadata[PARTY_KEY]);
