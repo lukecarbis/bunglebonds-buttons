@@ -522,7 +522,6 @@ OBR.onReady(async () => {
       ],
       shortcut: "K",
       onKeyDown(_ctx, e) {
-        console.log(e);
         if (!e.altKey || e.repeat) return;
 
         if (e.key === "ArrowLeft") void shiftActivePartyMember(-1);
