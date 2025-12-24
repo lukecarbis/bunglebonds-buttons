@@ -201,8 +201,8 @@ async function upsertActiveRing(activeId: string | null) {
     .position(position)
     .fillOpacity(0)
     .strokeColor("#3aa8ff")
-    .strokeWidth(5)
-    .strokeOpacity(0.9)
+    .strokeWidth(4)
+    .strokeOpacity(0.4)
     .disableHit(true)
     .layer("ATTACHMENT") // matches exemplar; also tends to “sit with” the token
     .attachedTo(token.id)
@@ -222,12 +222,13 @@ function startActiveRingPulse() {
   const start = performance.now();
   const min_opacity = 0.4;
   const max_opacity = 0.8;
-  const min_stroke = 8;
-  const max_stroke = 16;
+  const min_stroke = 4;
+  const max_stroke = 8;
   const period = 2000;
 
   activeRingPulseTimer = window.setInterval(async () => {
     const rings = await OBR.scene.local.getItems<Shape>(isActiveRing);
+    console.log(rings.length);
     if (!rings.length) return;
 
     const t = (performance.now() - start) / period;
