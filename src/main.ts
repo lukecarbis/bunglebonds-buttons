@@ -443,26 +443,17 @@ OBR.onReady(async () => {
       id: TOOL_ID,
       icons: [{ icon: "/icon.svg", label: "Party Hotkeys" }],
       shortcut: "B",
-      defaultMode: `${NS}.partyToolPrevActive`,
+      defaultMode: `${NS}.partyToolPrevActive`
     });
 
     await OBR.tool.createMode({
       id: `${NS}.partyToolPrevActive`,
       icons: [{ icon: "/icon.svg", label: "Prev Active" }],
-      shortcut: "1",
+      shortcut: "P",
       onKeyDown(_ctx, e) {
         if (!e.shiftKey || e.repeat) return;
-        void shiftActivePartyMember(-1);
-      },
-    });
-
-    await OBR.tool.createMode({
-      id: `${NS}.partyToolNextActive`,
-      icons: [{ icon: "/icon.svg", label: "Next Active" }],
-      shortcut: "2",
-      onKeyDown(_ctx, e) {
-        if (!e.shiftKey || e.repeat) return;
-        void shiftActivePartyMember(1);
+        if (e.key === "ArrowLeft") void shiftActivePartyMember(-1);
+        if (e.key === "ArrowRight") void shiftActivePartyMember(1);
       },
     });
   };
