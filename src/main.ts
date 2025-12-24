@@ -3,6 +3,7 @@ import "./style.css";
 
 const NS = "com.example.bunglebonds-buttons";
 const PARTY_KEY = `${NS}.partyMembers`;
+const IN_PARTY_KEY = `${NS}.inParty`;
 
 type PartyMember = { id: string; name: string };
 type PartyState = {
@@ -72,6 +73,17 @@ function normalisePartyState(value: unknown): PartyState {
 
 async function reconcilePartyFlagsFromState() {
   const state = await getPartyState();
+
+  // Ensure all party members have the flag
+  if (state.members.length) {
+    await OBR.scene.items.updateItems(
+      state.members.map((m) => m.id),
+      (items) => {
+        for (const it of items) it.metadata[IN_PARTY_KEY] = true;
+      },
+    );
+  }
+
   await clearActiveIfMissing(state);
 }
 
@@ -92,6 +104,13 @@ async function addToParty(member: PartyMember) {
 
   state.members.push({ id: member.id, name: member.name ?? "" });
   await setPartyState(state);
+
+  // Set item-level flag for context menu filtering
+  await OBR.scene.items.updateItems([member.id], (items) => {
+    for (const it of items) {
+      it.metadata[IN_PARTY_KEY] = true;
+    }
+  });
 }
 
 async function removeFromParty(id: string) {
@@ -104,6 +123,13 @@ async function removeFromParty(id: string) {
   if (state.members.length !== before) {
     await setPartyState(state);
   }
+
+  // Clear item-level flag for context menu filtering
+  await OBR.scene.items.updateItems([id], (items) => {
+    for (const it of items) {
+      delete it.metadata[IN_PARTY_KEY];
+    }
+  });
 }
 
 async function setActivePartyMember(id: string | null) {
@@ -212,7 +238,6 @@ function start() {
     // Tool (kept)
     await OBR.tool.create({
       id: `${NS}.tool`,
-      shortcut: "Shift+B",
       icons: [{ icon: "/bunglebonds-buttons/icon.svg", label: "Bunglebond's Buttons" }],
     });
 
@@ -245,6 +270,7 @@ function start() {
             every: [
               { key: "layer", value: "CHARACTER" },
               { key: "type", value: "IMAGE" },
+              { key: ["metadata", IN_PARTY_KEY], value: undefined },
             ],
             permissions: ["UPDATE"],
           },
@@ -256,17 +282,29 @@ function start() {
             every: [
               { key: "layer", value: "CHARACTER" },
               { key: "type", value: "IMAGE" },
+              { key: ["metadata", IN_PARTY_KEY], value: true },
             ],
             permissions: ["UPDATE"],
           },
         },
       ],
       async onClick(context) {
-        const item = context.items?.[0];
-        if (!item) return;
-    
-        await addToParty({ id: item.id, name: item.name ?? "" });
-        await OBR.notification.show(`Added "${item.name || "Unnamed"}" to Party.`, "SUCCESS");
+        const items = context.items ?? [];
+        if (!items.length) return;
+
+        const shouldAdd = items.every((it) => it.metadata?.[IN_PARTY_KEY] === undefined);
+
+        if (shouldAdd) {
+          for (const it of items) {
+            await addToParty({ id: it.id, name: it.name ?? "" });
+          }
+          await OBR.notification.show(`Added ${items.length} token(s) to Party.`, "SUCCESS");
+        } else {
+          for (const it of items) {
+            await removeFromParty(it.id);
+          }
+          await OBR.notification.show(`Removed ${items.length} token(s) from Party.`, "SUCCESS");
+        }
       },
     });
   });
