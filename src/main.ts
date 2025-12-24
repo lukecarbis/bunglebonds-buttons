@@ -3,7 +3,6 @@ import "./style.css";
 
 const NS = "com.example.bunglebonds-buttons";
 const PARTY_KEY = `${NS}.partyMembers`;
-const IN_PARTY_KEY = `${NS}.inParty`;
 
 type PartyMember = { id: string; name: string };
 type PartyState = {
@@ -96,9 +95,6 @@ async function addToParty(member: PartyMember) {
 
   state.members.push({ id: member.id, name: member.name ?? "" });
   await setPartyState(state);
-
-  // For context menu filtering/label
-  await setItemInPartyFlag(member.id, true);
 }
 
 async function removeFromParty(id: string) {
@@ -111,9 +107,6 @@ async function removeFromParty(id: string) {
   if (state.members.length !== before) {
     await setPartyState(state);
   }
-
-  // For context menu filtering/label
-  await setItemInPartyFlag(id, false);
 }
 
 async function setActivePartyMember(id: string | null) {
@@ -130,17 +123,6 @@ async function setActivePartyMember(id: string | null) {
 
   state.activeId = id;
   await setPartyState(state);
-}
-
-async function setItemInPartyFlag(itemId: string, inParty: boolean) {
-  await OBR.scene.items.updateItems([itemId], (items) => {
-    for (const it of items) {
-      const md = (it.metadata ?? {}) as Record<string, unknown>;
-      if (inParty) md[IN_PARTY_KEY] = true;
-      else delete md[IN_PARTY_KEY];
-      it.metadata = md as any;
-    }
-  });
 }
 
 async function clearActiveIfMissing(state: PartyState) {
@@ -168,10 +150,6 @@ async function cleanupPartyForDeletedItems() {
   }
 
   await setPartyState(state);
-
-  // Best-effort: if any "removed" items still exist somewhere due to timing,
-  // clear the flag. If they're truly deleted, updateItems will be a no-op.
-  await Promise.allSettled(removed.map((m) => setItemInPartyFlag(m.id, false)));
 }
 
 function renderPartyMembers(
@@ -267,12 +245,21 @@ function start() {
           icon: "/bunglebonds-buttons/icon.svg",
           label: "Add to Party",
           filter: {
-            min: 1,
-            max: 1,
             every: [
               { key: "layer", value: "CHARACTER" },
               { key: "type", value: "IMAGE" },
               { key: IN_PARTY_KEY, operator: "!=" as any, value: true },
+            ],
+            permissions: ["UPDATE"],
+          },
+        },
+        {
+          icon: "/bunglebonds-buttons/icon.svg",
+          label: "Remove from Party",
+          filter: {
+            every: [
+              { key: "layer", value: "CHARACTER" },
+              { key: "type", value: "IMAGE" },
             ],
             permissions: ["UPDATE"],
           },
@@ -284,33 +271,6 @@ function start() {
     
         await addToParty({ id: item.id, name: item.name ?? "" });
         await OBR.notification.show(`Added "${item.name || "Unnamed"}" to Party.`, "SUCCESS");
-      },
-    });
-    
-    await OBR.contextMenu.create({
-      id: `${NS}.party.remove`,
-      icons: [
-        {
-          icon: "/bunglebonds-buttons/icon.svg",
-          label: "Remove from Party",
-          filter: {
-            min: 1,
-            max: 1,
-            every: [
-              { key: "layer", value: "CHARACTER" },
-              { key: "type", value: "IMAGE" },
-              { key: IN_PARTY_KEY, value: true },
-            ],
-            permissions: ["UPDATE"],
-          },
-        },
-      ],
-      async onClick(context) {
-        const item = context.items?.[0];
-        if (!item) return;
-    
-        await removeFromParty(item.id);
-        await OBR.notification.show(`Removed "${item.name || "Unnamed"}" from Party.`, "INFO");
       },
     });
   });
