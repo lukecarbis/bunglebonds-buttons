@@ -159,6 +159,7 @@ async function setActivePartyMember(id: string | null) {
   if (!state.members.some((m) => m.id === id)) return;
 
   state.activeId = id;
+  await bringTokenToFront(id);
   await setPartyState(state);
 }
 
@@ -334,6 +335,17 @@ async function moveActiveTokenByGridSteps({ dx, dy }: GridStep, steps = 1) {
 
   await OBR.scene.items.updateItems([token.id], (items) => {
     for (const it of items) it.position = position;
+  });
+}
+
+async function bringTokenToFront(tokenId: string) {
+  const itemsOnLayer = await OBR.scene.items.getItems((it) => it.layer === "CHARACTER");
+  const maxZ = itemsOnLayer.reduce((m, it) => Math.max(m, it.zIndex ?? 0), 0);
+
+  await OBR.scene.items.updateItems([tokenId], (items) => {
+    for (const it of items) {
+      it.zIndex = maxZ + 1;
+    }
   });
 }
 
