@@ -8,6 +8,7 @@ const ACTIVE_RING_TAG = `${NS}.activeRing`;
 
 let activeRingPulseTimer: number | null = null;
 
+type GridStep = { dx: number; dy: number };
 type PartyMember = { id: string; name: string };
 type PartyState = {
   members: PartyMember[];
@@ -286,6 +287,31 @@ async function getTokenEventually(id: string, tries = 6, delayMs = 200) {
   return null;
 }
 
+async function moveActiveTokenByGridSteps({ dx, dy }: GridStep, steps = 1) {
+  if (dx === 0 && dy === 0) return;
+
+  const state = await getPartyState();
+  if (!state.activeId) return;
+
+  const [token] = await OBR.scene.items.getItems<Image>([state.activeId]);
+  if (!token) return;
+
+  // For square grids, 1 “space” == scene grid DPI in pixels.
+  const cell = await OBR.scene.grid.getDpi();
+
+  const target = {
+    x: token.position.x + dx * cell * steps,
+    y: token.position.y + dy * cell * steps,
+  };
+
+  // Snap to grid so it stays aligned. (Change snap parameters if you want corners vs centres.)
+  const snapped = await OBR.scene.grid.snapPosition(target, 1, true);
+
+  await OBR.scene.items.updateItems([token.id], (items) => {
+    for (const it of items) it.position = snapped;
+  });
+}
+
 async function cleanupPartyForDeletedItems() {
   const state = await getPartyState();
 
@@ -447,16 +473,24 @@ OBR.onReady(async () => {
     });
 
     await OBR.tool.createMode({
-      id: `${NS}.partyToolActive`,
-      icons: [{ icon: "/bunglebonds-buttons/icon.svg", label: "Active" }],
-      filter: {
-        activeTools: [TOOL_ID],
-      },
-      shortcut: "A",
+      id: `${NS}.partyToolKeypad`,
+      icons: [
+        {
+          icon: "/bunglebonds-buttons/icon.svg",
+          label: "Keypad",
+          filter: {
+            activeTools: [TOOL_ID],
+          },
+        },
+      ],
+      shortcut: "K",
       onKeyDown(_ctx, e) {
         if (!e.shiftKey || e.repeat) return;
+
         if (e.key === "ArrowLeft") void shiftActivePartyMember(-1);
         if (e.key === "ArrowRight") void shiftActivePartyMember(1);
+
+        if (e.code === "Numpad5") void moveActiveTokenByGridSteps({ dx: 0, dy: -1 }); // north
       },
     });
   };
