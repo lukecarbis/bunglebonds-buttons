@@ -6,9 +6,7 @@ const PARTY_KEY = `${NS}.partyMembers`;
 const IN_PARTY_KEY = `${NS}.inParty`;
 const ACTIVE_RING_TAG = `${NS}.activeRing`;
 
-const ACTIVE_RING_COLOR = "#3aa8ff";
-const ACTIVE_RING_STROKE = 10;
-const ACTIVE_RING_PADDING = 18;
+let activeRingPulseTimer: number | null = null;
 
 type PartyMember = { id: string; name: string };
 type PartyState = {
@@ -156,6 +154,11 @@ function isActiveRing(item: any): item is Shape {
 }
 
 async function removeActiveRing() {
+  if (activeRingPulseTimer !== null) {
+    clearInterval(activeRingPulseTimer);
+    activeRingPulseTimer = null;
+  }
+
   const rings = await OBR.scene.local.getItems<Shape>((it) => isActiveRing(it));
   if (rings.length) {
     await OBR.scene.local.deleteItems(rings.map((r) => r.id));
@@ -178,7 +181,7 @@ async function upsertActiveRing(activeId: string | null) {
   const height = token.image.height * dpiScale;
 
   // Use a circular ring sized to the smaller dimension
-  const diameter = Math.min(width, height) + ACTIVE_RING_PADDING;
+  const diameter = Math.min(width, height) + 16;
 
   // Account for grid offset (very important for tokens whose grid origin
   // is not the top-left of the image)
@@ -197,8 +200,8 @@ async function upsertActiveRing(activeId: string | null) {
     .height(diameter)
     .position(position)
     .fillOpacity(0)
-    .strokeColor(ACTIVE_RING_COLOR)
-    .strokeWidth(ACTIVE_RING_STROKE)
+    .strokeColor("#3aa8ff")
+    .strokeWidth(5)
     .strokeOpacity(0.9)
     .disableHit(true)
     .layer("ATTACHMENT") // matches exemplar; also tends to “sit with” the token
@@ -210,6 +213,46 @@ async function upsertActiveRing(activeId: string | null) {
     .build();
 
   await OBR.scene.local.addItems([ring]);
+  startActiveRingPulse();
+}
+
+function startActiveRingPulse() {
+  if (activeRingPulseTimer !== null) return;
+
+  const start = performance.now();
+  const min_opacity = 0.4;
+  const max_opacity = 0.8;
+  const min_stroke = 8;
+  const max_stroke = 16;
+  const period = 2000;
+
+  activeRingPulseTimer = window.setInterval(async () => {
+    const rings = await OBR.scene.local.getItems<Shape>(isActiveRing);
+    if (!rings.length) return;
+
+    const t = (performance.now() - start) / period;
+    const wave = 0.5 + 0.5 * Math.sin(t * Math.PI * 2);
+
+    const opacity =
+      min_opacity +
+      (max_opacity - min_opacity) * wave;
+
+    const strokeWidth =
+      min_stroke +
+      (max_stroke - min_stroke) * wave;
+
+    await OBR.scene.local.updateItems(
+      rings.map((r) => r.id),
+      (items) => {
+        for (const it of items) {
+          if (it.type !== "SHAPE") continue;
+          const shape = it as unknown as Shape;
+          shape.style.strokeOpacity = opacity;
+          shape.style.strokeWidth = strokeWidth;
+        }
+      },
+    );
+  }, 100); // ~10 FPS, smooth enough and cheap
 }
 
 async function cleanupPartyForDeletedItems() {
