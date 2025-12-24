@@ -1,9 +1,14 @@
-import OBR from "@owlbear-rodeo/sdk";
+import OBR, { buildShape, Image, Shape } from "@owlbear-rodeo/sdk";
 import "./style.css";
 
 const NS = "com.example.bunglebonds-buttons";
 const PARTY_KEY = `${NS}.partyMembers`;
 const IN_PARTY_KEY = `${NS}.inParty`;
+const ACTIVE_RING_TAG = `${NS}.activeRing`;
+
+const ACTIVE_RING_COLOR = "#3aa8ff";
+const ACTIVE_RING_STROKE = 10;
+const ACTIVE_RING_PADDING = 18;
 
 type PartyMember = { id: string; name: string };
 type PartyState = {
@@ -144,6 +149,61 @@ async function setActivePartyMember(id: string | null) {
 
   state.activeId = id;
   await setPartyState(state);
+  await upsertActiveRing(state.activeId);
+}
+
+function isActiveRing(item: any): item is Shape {
+  return item?.type === "SHAPE" && item?.metadata?.[ACTIVE_RING_TAG] === true;
+}
+
+async function removeActiveRing() {
+  const rings = await OBR.scene.items.getItems<Shape>((it) => isActiveRing(it));
+  if (rings.length) {
+    await OBR.scene.items.deleteItems(rings.map((r) => r.id));
+  }
+}
+
+async function upsertActiveRing(activeId: string | null) {
+  // If no active token, remove any ring
+  if (!activeId) {
+    await removeActiveRing();
+    return;
+  }
+
+  // Ensure the active token exists and is an Image
+  const [token] = await OBR.scene.items.getItems<Image>([activeId]);
+  if (!token || token.type !== "IMAGE") {
+    await removeActiveRing();
+    return;
+  }
+
+  // Remove any existing active ring (keep it simple and deterministic)
+  await removeActiveRing();
+
+  // Compute ring size from the token's intrinsic image size, scaled
+  const w = token.image.width * token.scale.x + ACTIVE_RING_PADDING;
+  const h = token.image.height * token.scale.y + ACTIVE_RING_PADDING;
+
+  const ring = buildShape()
+    .shapeType("CIRCLE")
+    .width(w)
+    .height(h)
+    .fillOpacity(0)
+    .strokeColor(ACTIVE_RING_COLOR)
+    .strokeWidth(ACTIVE_RING_STROKE)
+    .strokeOpacity(0.9)
+    .build();
+
+  // Attach so it follows move/rotate/scale
+  ring.attachedTo = token.id;
+
+  // Put it on the character layer so it renders with tokens
+  ring.layer = "CHARACTER";
+
+  // Tag it so we can find it again
+  ring.metadata[ACTIVE_RING_TAG] = true;
+
+  await OBR.scene.items.addItems([ring]);
 }
 
 async function cleanupPartyForDeletedItems() {
@@ -240,6 +300,7 @@ OBR.onReady(async () => {
     OBR.scene.onMetadataChange((metadata) => {
       const state = normalisePartyState(metadata[PARTY_KEY]);
       renderPartyMembers(state, ui);
+      void upsertActiveRing(state.activeId);
     });
 
     await reconcilePartyFlagsFromState();
