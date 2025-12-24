@@ -328,11 +328,12 @@ async function moveActiveTokenByGridSteps({ dx, dy }: GridStep, steps = 1) {
     y: token.position.y + dy * cell * steps * stepSize,
   };
 
-  // Snap to grid so it stays aligned. (Change snap parameters if you want corners vs centres.)
-  const snapped = await OBR.scene.grid.snapPosition(target, 1, true);
+  const position = halfStepMode
+    ? target
+    : await OBR.scene.grid.snapPosition(target, 1, true);
 
   await OBR.scene.items.updateItems([token.id], (items) => {
-    for (const it of items) it.position = snapped;
+    for (const it of items) it.position = position;
   });
 }
 
