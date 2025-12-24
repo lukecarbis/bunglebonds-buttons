@@ -360,19 +360,6 @@ function renderPartyMembers(
   }
 }
 
-const onKeyDown = (e: KeyboardEvent) => {
-  console.log("keydown", e);
-  if (!e.shiftKey) return;
-
-  if (e.key === "ArrowLeft") {
-    e.preventDefault();
-    void shiftActivePartyMember(-1);
-  } else if (e.key === "ArrowRight") {
-    e.preventDefault();
-    void shiftActivePartyMember(1);
-  }
-};
-
 OBR.onReady(async () => {
   applyThemeToCssVars(await OBR.theme.getTheme());
   OBR.theme.onChange(applyThemeToCssVars);
@@ -450,12 +437,38 @@ OBR.onReady(async () => {
       },
     });
 
-    window.addEventListener("keydown", onKeyDown);
+    const TOOL_ID = `${NS}.partyTool`;
+
+    await OBR.tool.create({
+      id: TOOL_ID,
+      icons: [{ icon: "/icon.svg", label: "Party Hotkeys" }],
+      shortcut: "B",
+      defaultMode: `${NS}.partyToolPrevActive`,
+    });
+
+    await OBR.tool.createMode({
+      id: `${NS}.partyToolPrevActive`,
+      icons: [{ icon: "/icon.svg", label: "Prev Active" }],
+      shortcut: "1",
+      onKeyDown(_ctx, e) {
+        if (!e.shiftKey || e.repeat) return;
+        void shiftActivePartyMember(-1);
+      },
+    });
+
+    await OBR.tool.createMode({
+      id: `${NS}.partyToolNextActive`,
+      icons: [{ icon: "/icon.svg", label: "Next Active" }],
+      shortcut: "2",
+      onKeyDown(_ctx, e) {
+        if (!e.shiftKey || e.repeat) return;
+        void shiftActivePartyMember(1);
+      },
+    });
   };
 
   const unwireScene = () => {
     sceneWired = false;
-    window.removeEventListener("keydown", onKeyDown);
     void removeActiveRing();
 
     ui.list.innerHTML = "";
