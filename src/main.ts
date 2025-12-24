@@ -165,17 +165,11 @@ async function removeActiveRing() {
 async function upsertActiveRing(activeId: string | null) {
   await removeActiveRing();
 
-  if (!activeId) {
-    return;
-  }
+  if (!activeId) return;
 
-  // Ensure the active token exists and is an Image
   const [token] = await OBR.scene.items.getItems<Image>([activeId]);
-  if (!token || token.type !== "IMAGE") {
-    return;
-  }
+  if (!token || token.type !== "IMAGE") return;
 
-  // Compute ring size from the token's intrinsic image size, scaled
   const w = token.image.width * token.scale.x + ACTIVE_RING_PADDING;
   const h = token.image.height * token.scale.y + ACTIVE_RING_PADDING;
 
@@ -189,13 +183,14 @@ async function upsertActiveRing(activeId: string | null) {
     .strokeOpacity(0.9)
     .build();
 
-  // Attach so it follows move/rotate/scale
+  // IMPORTANT: place it where the token is
+  ring.position = { ...token.position };
+  ring.rotation = token.rotation;
+
   ring.attachedTo = token.id;
-
-  // Put it on the character layer so it renders with tokens
   ring.layer = "CHARACTER";
+  ring.disableHit = true;
 
-  // Tag it so we can find it again
   ring.metadata[ACTIVE_RING_TAG] = true;
 
   await OBR.scene.local.addItems([ring]);
