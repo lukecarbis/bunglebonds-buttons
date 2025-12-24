@@ -72,9 +72,6 @@ function normalisePartyState(value: unknown): PartyState {
 
 async function reconcilePartyFlagsFromState() {
   const state = await getPartyState();
-  for (const m of state.members) {
-    await setItemInPartyFlag(m.id, true);
-  }
   await clearActiveIfMissing(state);
 }
 
@@ -248,7 +245,6 @@ function start() {
             every: [
               { key: "layer", value: "CHARACTER" },
               { key: "type", value: "IMAGE" },
-              { key: IN_PARTY_KEY, operator: "!=" as any, value: true },
             ],
             permissions: ["UPDATE"],
           },
