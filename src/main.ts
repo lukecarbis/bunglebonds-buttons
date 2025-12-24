@@ -361,6 +361,7 @@ function renderPartyMembers(
 }
 
 const onKeyDown = (e: KeyboardEvent) => {
+  console.log("keydown", e);
   if (!e.shiftKey) return;
 
   if (e.key === "ArrowLeft") {
