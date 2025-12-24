@@ -149,7 +149,6 @@ async function setActivePartyMember(id: string | null) {
 
   state.activeId = id;
   await setPartyState(state);
-  await upsertActiveRing(state.activeId);
 }
 
 function isActiveRing(item: any): item is Shape {
@@ -157,28 +156,24 @@ function isActiveRing(item: any): item is Shape {
 }
 
 async function removeActiveRing() {
-  const rings = await OBR.scene.items.getItems<Shape>((it) => isActiveRing(it));
+  const rings = await OBR.scene.local.getItems<Shape>((it) => isActiveRing(it));
   if (rings.length) {
-    await OBR.scene.items.deleteItems(rings.map((r) => r.id));
+    await OBR.scene.local.deleteItems(rings.map((r) => r.id));
   }
 }
 
 async function upsertActiveRing(activeId: string | null) {
-  // If no active token, remove any ring
+  await removeActiveRing();
+
   if (!activeId) {
-    await removeActiveRing();
     return;
   }
 
   // Ensure the active token exists and is an Image
   const [token] = await OBR.scene.items.getItems<Image>([activeId]);
   if (!token || token.type !== "IMAGE") {
-    await removeActiveRing();
     return;
   }
-
-  // Remove any existing active ring (keep it simple and deterministic)
-  await removeActiveRing();
 
   // Compute ring size from the token's intrinsic image size, scaled
   const w = token.image.width * token.scale.x + ACTIVE_RING_PADDING;
@@ -203,7 +198,7 @@ async function upsertActiveRing(activeId: string | null) {
   // Tag it so we can find it again
   ring.metadata[ACTIVE_RING_TAG] = true;
 
-  await OBR.scene.items.addItems([ring]);
+  await OBR.scene.local.addItems([ring]);
 }
 
 async function cleanupPartyForDeletedItems() {
