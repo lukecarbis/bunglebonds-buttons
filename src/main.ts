@@ -224,76 +224,94 @@ OBR.onReady(async () => {
   applyThemeToCssVars(await OBR.theme.getTheme());
   OBR.theme.onChange(applyThemeToCssVars);
 
-  // Tool
-  await OBR.tool.create({
-    id: `${NS}.tool`,
-    icons: [{ icon: "/bunglebonds-buttons/icon.svg", label: "Bunglebond's Buttons" }],
-  });
-
-  // In-tool UI: show all tokens/items
+  // Mount UI once (panel iframe)
   const ui = mountUi();
 
-  // Initial render + live updates (from scene metadata)
-  renderPartyMembers(await getPartyState(), ui);
+  // Track whether we've wired scene listeners (scene can toggle ready/unready)
+  let sceneWired = false;
 
-  OBR.scene.onMetadataChange((metadata) => {
-    const state = normalisePartyState(metadata[PARTY_KEY]);
-    renderPartyMembers(state, ui);
+  const wireScene = async () => {
+    if (sceneWired) return;
+    sceneWired = true;
+
+    // Initial render + live updates
+    renderPartyMembers(await getPartyState(), ui);
+
+    OBR.scene.onMetadataChange((metadata) => {
+      const state = normalisePartyState(metadata[PARTY_KEY]);
+      renderPartyMembers(state, ui);
+    });
+
+    await reconcilePartyFlagsFromState();
+
+    OBR.scene.items.onChange(() => {
+      void cleanupPartyForDeletedItems();
+    });
+
+    await OBR.contextMenu.create({
+      id: `${NS}.party.context`,
+      icons: [
+        {
+          icon: "/bunglebonds-buttons/icon.svg",
+          label: "Add to Party",
+          filter: {
+            every: [
+              { key: "layer", value: "CHARACTER" },
+              { key: "type", value: "IMAGE" },
+              { key: ["metadata", IN_PARTY_KEY], value: undefined },
+            ],
+            permissions: ["UPDATE"],
+          },
+        },
+        {
+          icon: "/bunglebonds-buttons/icon.svg",
+          label: "Remove from Party",
+          filter: {
+            every: [
+              { key: "layer", value: "CHARACTER" },
+              { key: "type", value: "IMAGE" },
+              { key: ["metadata", IN_PARTY_KEY], value: true },
+            ],
+            permissions: ["UPDATE"],
+          },
+        },
+      ],
+      async onClick(context) {
+        const items = context.items ?? [];
+        if (!items.length) return;
+
+        const shouldAdd = items.every(
+          (it) => it.metadata?.[IN_PARTY_KEY] === undefined,
+        );
+
+        if (shouldAdd) {
+          for (const it of items) await addToParty({ id: it.id, name: it.name ?? "" });
+          await OBR.notification.show(`Added ${items.length} token(s) to Party.`, "SUCCESS");
+        } else {
+          for (const it of items) await removeFromParty(it.id);
+          await OBR.notification.show(`Removed ${items.length} token(s) from Party.`, "SUCCESS");
+        }
+      },
+    });
+  };
+
+  const unwireScene = () => {
+    sceneWired = false;
+
+    ui.list.innerHTML = "";
+    ui.help.style.display = "block";
+    ui.help.textContent = "Open a scene to use Party.";
+  };
+
+  OBR.scene.onReadyChange((ready) => {
+    if (ready) void wireScene();
+    else unwireScene();
   });
 
-  await reconcilePartyFlagsFromState();
-
-  // Cleanup party list if tokens are deleted from the scene
-  OBR.scene.items.onChange(() => {
-    void cleanupPartyForDeletedItems();
-  });       
-
-  // Right-click context menu: Character token → Add to Party Members (stored in scene metadata)
-  await OBR.contextMenu.create({
-    id: `${NS}.party.add`,
-    icons: [
-      {
-        icon: "/bunglebonds-buttons/icon.svg",
-        label: "Add to Party",
-        filter: {
-          every: [
-            { key: "layer", value: "CHARACTER" },
-            { key: "type", value: "IMAGE" },
-            { key: ["metadata", IN_PARTY_KEY], value: undefined },
-          ],
-          permissions: ["UPDATE"],
-        },
-      },
-      {
-        icon: "/bunglebonds-buttons/icon.svg",
-        label: "Remove from Party",
-        filter: {
-          every: [
-            { key: "layer", value: "CHARACTER" },
-            { key: "type", value: "IMAGE" },
-            { key: ["metadata", IN_PARTY_KEY], value: true },
-          ],
-          permissions: ["UPDATE"],
-        },
-      },
-    ],
-    async onClick(context) {
-      const items = context.items ?? [];
-      if (!items.length) return;
-
-      const shouldAdd = items.every((it) => it.metadata?.[IN_PARTY_KEY] === undefined);
-
-      if (shouldAdd) {
-        for (const it of items) {
-          await addToParty({ id: it.id, name: it.name ?? "" });
-        }
-        await OBR.notification.show(`Added ${items.length} token(s) to Party.`, "SUCCESS");
-      } else {
-        for (const it of items) {
-          await removeFromParty(it.id);
-        }
-        await OBR.notification.show(`Removed ${items.length} token(s) from Party.`, "SUCCESS");
-      }
-    },
-  });
+  // Handle the case where the scene is already ready when the iframe loads
+  if (await OBR.scene.isReady()) {
+    void wireScene();
+  } else {
+    unwireScene();
+  }
 });
