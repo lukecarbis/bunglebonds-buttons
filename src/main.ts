@@ -299,6 +299,16 @@ async function getTokenEventually(id: string, tries = 6, delayMs = 200) {
   return null;
 }
 
+let halfStepMode = false;
+
+function toggleHalfStepMode() {
+  halfStepMode = !halfStepMode;
+  void OBR.notification.show(
+    halfStepMode ? "Half-step movement." : "Full-step movement."
+    "INFO",
+  );
+}
+
 async function moveActiveTokenByGridSteps({ dx, dy }: GridStep, steps = 1) {
   if (dx === 0 && dy === 0) return;
 
@@ -311,9 +321,11 @@ async function moveActiveTokenByGridSteps({ dx, dy }: GridStep, steps = 1) {
   // For square grids, 1 “space” == scene grid DPI in pixels.
   const cell = await OBR.scene.grid.getDpi();
 
+  const stepSize = halfStepMode ? 0.5 : 1;
+
   const target = {
-    x: token.position.x + dx * cell * steps,
-    y: token.position.y + dy * cell * steps,
+    x: token.position.x + dx * cell * steps * stepSize,
+    y: token.position.y + dy * cell * steps * stepSize,
   };
 
   // Snap to grid so it stays aligned. (Change snap parameters if you want corners vs centres.)
@@ -501,6 +513,8 @@ OBR.onReady(async () => {
 
         if (e.key === "ArrowLeft") void shiftActivePartyMember(-1);
         if (e.key === "ArrowRight") void shiftActivePartyMember(1);
+
+        if (e.code === "KeyA") toggleHalfStepMode();
 
         const dir = NUMPAD_DIR[e.code];
         if (dir) {
