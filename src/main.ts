@@ -6,6 +6,18 @@ const PARTY_KEY = `${NS}.partyMembers`;
 const IN_PARTY_KEY = `${NS}.inParty`;
 const ACTIVE_RING_TAG = `${NS}.activeRing`;
 
+const NUMPAD_DIR: Record<string, { dx: number; dy: number } | null> = {
+  Numpad1: { dx: -1, dy:  1 }, // SW
+  Numpad2: { dx:  0, dy:  1 }, // S
+  Numpad3: { dx:  1, dy:  1 }, // SE
+  Numpad4: { dx: -1, dy:  0 }, // W
+  Numpad5: null,
+  Numpad6: { dx:  1, dy:  0 }, // E
+  Numpad7: { dx: -1, dy: -1 }, // NW
+  Numpad8: { dx:  0, dy: -1 }, // N
+  Numpad9: { dx:  1, dy: -1 }, // NE
+};
+
 let activeRingPulseTimer: number | null = null;
 
 type GridStep = { dx: number; dy: number };
@@ -490,7 +502,10 @@ OBR.onReady(async () => {
         if (e.key === "ArrowLeft") void shiftActivePartyMember(-1);
         if (e.key === "ArrowRight") void shiftActivePartyMember(1);
 
-        if (e.code === "Numpad7") void moveActiveTokenByGridSteps({ dx: 0, dy: -1 }); // north
+        const dir = NUMPAD_DIR[e.code];
+        if (dir) {
+          void moveActiveTokenByGridSteps(dir);
+        }
       },
     });
   };
