@@ -304,7 +304,7 @@ let halfStepMode = false;
 function toggleHalfStepMode() {
   halfStepMode = !halfStepMode;
   void OBR.notification.show(
-    halfStepMode ? "Half-step movement." : "Full-step movement."
+    halfStepMode ? "Half-step movement." : "Full-step movement.",
     "INFO",
   );
 }
