@@ -149,6 +149,28 @@ async function setActivePartyMember(id: string | null) {
   await setPartyState(state);
 }
 
+async function shiftActivePartyMember(direction: -1 | 1) {
+  const state = await getPartyState();
+  const members = state.members;
+
+  if (!members.length) return;
+
+  const currentIndex = state.activeId
+    ? members.findIndex((m) => m.id === state.activeId)
+    : -1;
+
+  // If none active (or activeId missing), pick first/last depending on direction
+  const nextIndex =
+    currentIndex === -1
+      ? direction === 1
+        ? 0
+        : members.length - 1
+      : (currentIndex + direction + members.length) % members.length;
+
+  state.activeId = members[nextIndex].id;
+  await setPartyState(state);
+}
+
 function isActiveRing(item: any): item is Shape {
   return item?.type === "SHAPE" && item?.metadata?.[ACTIVE_RING_TAG] === true;
 }
@@ -252,7 +274,7 @@ function startActiveRingPulse() {
         }
       },
     );
-  }, 200);
+  }, 100);
 }
 
 async function getTokenEventually(id: string, tries = 6, delayMs = 200) {
@@ -338,6 +360,18 @@ function renderPartyMembers(
   }
 }
 
+const onKeyDown = (e: KeyboardEvent) => {
+  if (!e.shiftKey) return;
+
+  if (e.key === "ArrowLeft") {
+    e.preventDefault();
+    void shiftActivePartyMember(-1);
+  } else if (e.key === "ArrowRight") {
+    e.preventDefault();
+    void shiftActivePartyMember(1);
+  }
+};
+
 OBR.onReady(async () => {
   applyThemeToCssVars(await OBR.theme.getTheme());
   OBR.theme.onChange(applyThemeToCssVars);
@@ -414,10 +448,13 @@ OBR.onReady(async () => {
         }
       },
     });
+
+    window.addEventListener("keydown", onKeyDown);
   };
 
   const unwireScene = () => {
     sceneWired = false;
+    window.removeEventListener("keydown", onKeyDown);
     void removeActiveRing();
 
     ui.list.innerHTML = "";
