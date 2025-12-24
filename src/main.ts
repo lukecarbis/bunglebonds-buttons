@@ -224,16 +224,8 @@ OBR.onReady(async () => {
   applyThemeToCssVars(await OBR.theme.getTheme());
   OBR.theme.onChange(applyThemeToCssVars);
 
-  // Tool (kept)
-  await OBR.tool.create({
-    id: `${NS}.tool`,
-    icons: [{ icon: "/bunglebonds-buttons/icon.svg", label: "Bunglebond's Buttons" }],
-  });
-
-  // In-tool UI: show all tokens/items
   const ui = mountUi();
 
-  // Initial render + live updates (from scene metadata)
   renderPartyMembers(await getPartyState(), ui);
 
   OBR.scene.onMetadataChange((metadata) => {
