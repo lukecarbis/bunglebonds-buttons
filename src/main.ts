@@ -168,30 +168,46 @@ async function upsertActiveRing(activeId: string | null) {
   if (!activeId) return;
 
   const [token] = await OBR.scene.items.getItems<Image>([activeId]);
-  if (!token || token.type !== "IMAGE") return;
+  if (!token || token.type !== "IMAGE" || !token.grid) return;
 
-  const w = token.image.width * token.scale.x + ACTIVE_RING_PADDING;
-  const h = token.image.height * token.scale.y + ACTIVE_RING_PADDING;
+  const sceneDpi = await OBR.scene.grid.getDpi();
+
+  // Normalise token image pixels into scene units
+  const dpiScale = sceneDpi / token.grid.dpi;
+  const width = token.image.width * dpiScale;
+  const height = token.image.height * dpiScale;
+
+  // Use a circular ring sized to the smaller dimension
+  const diameter = Math.min(width, height) + ACTIVE_RING_PADDING;
+
+  // Account for grid offset (very important for tokens whose grid origin
+  // is not the top-left of the image)
+  const offsetX = (token.grid.offset.x / token.image.width) * width;
+  const offsetY = (token.grid.offset.y / token.image.height) * height;
+
+  // Compute centre position in scene coordinates
+  const position = {
+    x: token.position.x - offsetX + width / 2,
+    y: token.position.y - offsetY + height / 2,
+  };
 
   const ring = buildShape()
     .shapeType("CIRCLE")
-    .width(w)
-    .height(h)
+    .width(diameter)
+    .height(diameter)
+    .position(position)
     .fillOpacity(0)
     .strokeColor(ACTIVE_RING_COLOR)
     .strokeWidth(ACTIVE_RING_STROKE)
     .strokeOpacity(0.9)
+    .disableHit(true)
+    .layer("ATTACHMENT") // matches exemplar; also tends to “sit with” the token
+    .attachedTo(token.id)
+    .locked(true)
+    .name("Active Ring")
+    .metadata({ [ACTIVE_RING_TAG]: true })
+    .visible(token.visible)
     .build();
-
-  // IMPORTANT: place it where the token is
-  ring.position = { ...token.position };
-  ring.rotation = token.rotation;
-
-  ring.attachedTo = token.id;
-  ring.layer = "CHARACTER";
-  ring.disableHit = true;
-
-  ring.metadata[ACTIVE_RING_TAG] = true;
 
   await OBR.scene.local.addItems([ring]);
 }
