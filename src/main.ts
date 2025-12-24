@@ -1,11 +1,9 @@
-import OBR, { buildShape, isShape, type Image, type Shape } from "@owlbear-rodeo/sdk";
+import OBR from "@owlbear-rodeo/sdk";
 import "./style.css";
 
 const NS = "com.example.bunglebonds-buttons";
 const PARTY_KEY = `${NS}.partyMembers`;
 const IN_PARTY_KEY = `${NS}.inParty`;
-const ACTIVE_KEY = `${NS}.active`;
-const ACTIVE_RING_KEY = `${NS}.activeRing`;
 
 type PartyMember = { id: string; name: string };
 type PartyState = {
@@ -73,33 +71,6 @@ function normalisePartyState(value: unknown): PartyState {
   return { members, activeId: activeOk ? activeId : null };
 }
 
-function buildActiveRing(attachedTo: Image, dpi: number): Shape {
-  // Match the coloured-rings approach: size ring to grid DPI and token scale.
-  const size = dpi * attachedTo.scale.x;
-
-  return buildShape()
-    .name("Active Ring")
-    .layer("ATTACHMENT")
-    .attachedTo(attachedTo.id)
-    .disableHit(true)
-    .locked(true)
-    .width(size)
-    .height(size)
-    .shapeType("CIRCLE")
-    .style({
-      fillColor: "#000000",
-      fillOpacity: 0,          // hollow ring
-      strokeColor: "#3aa0ff",  // blue
-      strokeOpacity: 0.55,     // baseline
-      strokeWidth: Math.max(6, dpi * 0.12),
-      strokeDash: [],          // or e.g. [8, 6] for dashed
-    })
-    .metadata({
-      [ACTIVE_RING_KEY]: { enabled: true },
-    })
-    .build();
-}
-
 async function reconcilePartyFlagsFromState() {
   const state = await getPartyState();
 
@@ -111,28 +82,6 @@ async function reconcilePartyFlagsFromState() {
         for (const it of items) it.metadata[IN_PARTY_KEY] = true;
       },
     );
-  }
-}
-
-async function reconcileActiveFlagFromState() {
-  const state = await getPartyState();
-  const items = await OBR.scene.items.getItems();
-
-  const activeId = state.activeId;
-  const idsToClear = items
-    .filter((i) => i.metadata?.[ACTIVE_KEY] === true && i.id !== activeId)
-    .map((i) => i.id);
-
-  if (idsToClear.length) {
-    await OBR.scene.items.updateItems(idsToClear, (its) => {
-      for (const it of its) delete it.metadata[ACTIVE_KEY];
-    });
-  }
-
-  if (activeId) {
-    await OBR.scene.items.updateItems([activeId], (its) => {
-      for (const it of its) it.metadata[ACTIVE_KEY] = true;
-    });
   }
 }
 
@@ -183,86 +132,18 @@ async function removeFromParty(id: string) {
 
 async function setActivePartyMember(id: string | null) {
   const state = await getPartyState();
-  const prev = state.activeId;
 
-  if (id !== null && !state.members.some((m) => m.id === id)) return;
+  if (id === null) {
+    state.activeId = null;
+    await setPartyState(state);
+    return;
+  }
+
+  // Only allow active to be set to an existing member.
+  if (!state.members.some((m) => m.id === id)) return;
 
   state.activeId = id;
   await setPartyState(state);
-
-  // Clear previous active flag
-  if (prev) {
-    await OBR.scene.items.updateItems([prev], (items) => {
-      for (const it of items) delete it.metadata[ACTIVE_KEY];
-    });
-  }
-
-  // Set new active flag
-  if (id) {
-    await OBR.scene.items.updateItems([id], (items) => {
-      for (const it of items) it.metadata[ACTIVE_KEY] = true;
-    });
-  }
-}
-
-async function setActiveRingForToken(activeTokenId: string | null) {
-  // Remove existing active rings created by this extension
-  const existing = await OBR.scene.items.getItems<Shape>((item): item is Shape => {
-    if (!isShape(item)) return false;
-    const meta = item.metadata?.[ACTIVE_RING_KEY] as any;
-    return Boolean(meta?.enabled);
-  });
-
-  if (existing.length) {
-    await OBR.scene.items.deleteItems(existing.map((r) => r.id));
-  }
-
-  if (!activeTokenId) return;
-
-  const [token] = await OBR.scene.items.getItems<Image>([activeTokenId]);
-  if (!token) return;
-
-  const dpi = await OBR.scene.grid.getDpi();
-  const ring = buildActiveRing(token, dpi);
-  await OBR.scene.items.addItems([ring]);
-}
-
-let pulseTimer: number | null = null;
-
-function startRingPulse() {
-  if (pulseTimer !== null) window.clearInterval(pulseTimer);
-
-  const periodMs = 2800;
-  const min = 0.25;
-  const max = 0.85;
-
-  pulseTimer = window.setInterval(async () => {
-    const rings = await OBR.scene.items.getItems<Shape>((item): item is Shape => {
-      if (!isShape(item)) return false;
-      const meta = item.metadata?.[ACTIVE_RING_KEY] as any;
-      return Boolean(meta?.enabled);
-    });
-
-    if (!rings.length) return;
-
-    const t = (Date.now() % periodMs) / periodMs;
-    const s = 0.5 - 0.5 * Math.cos(t * Math.PI * 2); // 0..1
-    const opacity = min + (max - min) * s;
-
-    await OBR.scene.items.updateItems<Shape>(
-      rings.map((r) => r.id),
-      (items) => {
-        for (const it of items) {
-          it.style.strokeOpacity = opacity;
-        }
-      },
-    );
-  }, 120);
-}
-
-function stopRingPulse() {
-  if (pulseTimer !== null) window.clearInterval(pulseTimer);
-  pulseTimer = null;
 }
 
 async function cleanupPartyForDeletedItems() {
@@ -356,22 +237,12 @@ OBR.onReady(async () => {
     // Initial render + live updates
     renderPartyMembers(await getPartyState(), ui);
 
-    let lastActiveId: string | null = null;
-    
     OBR.scene.onMetadataChange((metadata) => {
       const state = normalisePartyState(metadata[PARTY_KEY]);
       renderPartyMembers(state, ui);
-    
-      if (state.activeId !== lastActiveId) {
-        lastActiveId = state.activeId;
-        void setActiveRingForToken(state.activeId);
-      }
     });
 
     await reconcilePartyFlagsFromState();
-    await reconcileActiveFlagFromState();
-    await setActiveRingForToken((await getPartyState()).activeId);
-    startRingPulse();
 
     OBR.scene.items.onChange(() => {
       void cleanupPartyForDeletedItems();
@@ -426,9 +297,6 @@ OBR.onReady(async () => {
 
   const unwireScene = () => {
     sceneWired = false;
-
-    stopRingPulse();
-    void setActiveRingForToken(null);
 
     ui.list.innerHTML = "";
     ui.help.style.display = "block";
